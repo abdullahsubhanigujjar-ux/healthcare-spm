@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Healthcare Project Management & Monitoring System | CSE-494</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Navigation Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2><i class="fa-solid fa-hospital"></i> SmartHealth PM</h2>
+      <p>5-Hospital Network SPM System (FA23)</p>
+    </div>
+
+    <ul class="nav-links">
+      <li>
+        <button class="nav-btn active" onclick="switchTab('dashboard')">
+          <i class="fa-solid fa-chart-pie"></i> Executive Dashboard
+        </button>
+      </li>
+      <li>
+        <button class="nav-btn" onclick="switchTab('charter')">
+          <i class="fa-solid fa-file-contract"></i> 1. Charter & Integration
+          <span class="badge-pill">4 M</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-btn" onclick="switchTab('scope')">
+          <i class="fa-solid fa-sitemap"></i> 2. Scope & WBS
+          <span class="badge-pill" id="pendingCrBadge">2 CR</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-btn" onclick="switchTab('schedule')">
+          <i class="fa-solid fa-calendar-days"></i> 3. Schedule & Gantt
+          <span class="badge-pill" id="delayedTaskBadge">2 Del</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-btn" onclick="switchTab('cost')">
+          <i class="fa-solid fa-calculator"></i> 4. Cost & EVM Analysis
+          <span class="badge-pill">EVM</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-btn" onclick="switchTab('quality')">
+          <i class="fa-solid fa-shield-virus"></i> 5. Quality & Risks (PDPC)
+          <span class="badge-pill" id="criticalDefectBadge">2 Crit</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-btn" onclick="switchTab('reports')">
+          <i class="fa-solid fa-file-lines"></i> 6. Reports & Audit
+          <span class="badge-pill">Audit</span>
+        </button>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div><strong>Course:</strong> CSE-494 Software PM</div>
+      <div><strong>Network:</strong> 5 Hospitals Deployment</div>
+      <div><strong>Status:</strong> Mid-Term Exam (Week 8)</div>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Top Header Bar -->
+    <header class="top-header">
+      <div class="top-header-left">
+        <h1 id="pageTitle">Executive Project Dashboard</h1>
+        <div class="sub-meta">
+          <span><i class="fa-solid fa-calendar-check"></i> Project Week: <strong id="headerCurrentWeek">Week 8</strong> / <span id="headerDeadline">16</span></span>
+          <span><i class="fa-solid fa-money-bill-wave"></i> Approved Budget: <strong id="headerApprovedBudget">PKR 5,000,000</strong></span>
+          <span><i class="fa-solid fa-heart-pulse"></i> Health Status: <strong id="headerProjectHealth">Evaluating...</strong></span>
+        </div>
+      </div>
+      <div class="top-header-actions">
+        <button class="btn btn-outline" onclick="fetchSummary();"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        <button class="btn btn-primary" onclick="openClosureModal();"><i class="fa-solid fa-flag-checkered"></i> Project Status / Closure</button>
+      </div>
+    </header>
+
+    <!-- Content Body -->
+    <main class="content-body">
+
+      <!-- ========================================== -->
+      <!-- MODULE 6 / EXECUTIVE DASHBOARD -->
+      <!-- ========================================== -->
+      <section id="section-dashboard" class="module-section active">
+        
+        <!-- Live Alert Banner (Threshold Violations & Critical Defects) -->
+        <div id="dashboardAlertContainer"></div>
+
+        <!-- 4 Key KPI Tiles -->
+        <div class="grid-4">
+          <div class="stat-card info">
+            <div class="stat-label">Overall Project Progress</div>
+            <div class="stat-value" id="dashProgressVal">0%</div>
+            <div class="progress-bar-bg" style="margin-top: 8px;">
+              <div class="progress-bar-fill" id="dashProgressFill" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="stat-card warning">
+            <div class="stat-label">Cost Performance Index (CPI)</div>
+            <div class="stat-value" id="dashCpiVal">--</div>
+            <div class="stat-sub" id="dashCpiSub">EVM: EV / AC</div>
+          </div>
+          <div class="stat-card danger">
+            <div class="stat-label">Schedule Performance Index (SPI)</div>
+            <div class="stat-value" id="dashSpiVal">--</div>
+            <div class="stat-sub" id="dashSpiSub">EVM: EV / PV</div>
+          </div>
+          <div class="stat-card danger">
+            <div class="stat-label">Critical Quality Defects</div>
+            <div class="stat-value" id="dashCriticalDefectsVal">0</div>
+            <div class="stat-sub">Appointment & EHR Patient Sync</div>
+          </div>
+        </div>
+
+        <!-- Budget & Schedule Snapshot -->
+        <div class="grid-2" style="margin-top: 22px;">
+          <!-- Budget Burn Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-wallet text-primary"></i> Budget & Cost Tracking</h3>
+              <span class="badge badge-approved" id="dashBudgetApprovedBadge">PKR 5,000,000</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <tbody>
+                  <tr><td>Budget at Completion (BAC):</td><td><strong id="dashBAC">--</strong></td></tr>
+                  <tr><td>Actual Cost Incurred (AC):</td><td class="text-danger"><strong id="dashAC">--</strong></td></tr>
+                  <tr><td>Earned Value Generated (EV):</td><td><strong id="dashEV">--</strong></td></tr>
+                  <tr><td>Planned Value Baseline (PV):</td><td><strong id="dashPV">--</strong></td></tr>
+                  <tr><td>Estimate at Completion (EAC):</td><td><strong id="dashEAC" style="color: #dc2626;">--</strong></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Active Slippage & Change Impact -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-triangle-exclamation text-warning"></i> Active Delays & Scope Requests</h3>
+            </div>
+            <div id="dashPendingChangesBox" style="margin-bottom: 12px;"></div>
+            <div id="dashDelayedActivitiesBox"></div>
+          </div>
+        </div>
+
+        <!-- Major Milestones Roadmap -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-timeline"></i> Project Milestone Schedule</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Milestone Name</th>
+                  <th>Target Week</th>
+                  <th>Key Deliverable</th>
+                  <th>Current Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="dashMilestonesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- MODULE 1: INITIATION & INTEGRATION MANAGEMENT -->
+      <!-- ========================================== -->
+      <section id="section-charter" class="module-section">
+        
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-stamp"></i> Project Charter (Smart Healthcare System)</h3>
+            <button class="btn btn-primary btn-sm" onclick="saveCharterChanges();"><i class="fa-solid fa-floppy-disk"></i> Save Charter</button>
+          </div>
+          
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label>Project Title</label>
+                <input type="text" id="charterProjectName" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label>Project Objectives</label>
+                <textarea id="charterObjectives" class="form-control" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Key Stakeholders</label>
+                <textarea id="charterStakeholders" class="form-control" rows="2"></textarea>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label>Scope Inclusions (Boundaries)</label>
+                <textarea id="charterInclusions" class="form-control" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Scope Exclusions (Out of Scope)</label>
+                <textarea id="charterExclusions" class="form-control" rows="2"></textarea>
+              </div>
+              <div class="grid-2">
+                <div class="form-group">
+                  <label>Current Week</label>
+                  <input type="number" id="charterCurrentWeek" class="form-control" min="1" max="30" />
+                </div>
+                <div class="form-group">
+                  <label>Project Lifecycle Status</label>
+                  <select id="charterStatus" class="form-control">
+                    <option value="Initiation">Initiation</option>
+                    <option value="In Progress">In Progress (Executing)</option>
+                    <option value="Monitoring & Controlling">Monitoring & Controlling</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Management Plan Baselines & Team Allocation -->
+        <div class="grid-2">
+          
+          <!-- PMP Baselines -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-book-bookmark"></i> Project Management Plan (PMP) Baselines</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <tbody>
+                  <tr>
+                    <td><strong>Scope Baseline:</strong></td>
+                    <td>5 Core Modules (Appts, Lab, Rosters, Consultations, Billing) across 5 Hospitals.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Schedule Baseline:</strong></td>
+                    <td>Initial: 16 Weeks | Current: <span id="pmpDeadlineWeeks">16</span> Weeks (Subject to Approved CRs).</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Cost Baseline (BAC):</strong></td>
+                    <td>Initial: PKR 5,000,000 | Current Approved: <span id="pmpApprovedBudget">PKR 5,000,000</span>.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Quality Standard:</strong></td>
+                    <td>Zero Critical/Blocker defects before network pilot; ISO 25010 & HIPAA data privacy.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Project Team Structure (7 Member Team from Case Study) -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-users"></i> Project Development Team (7 Members)</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Allocation</th>
+                  </tr>
+                </thead>
+                <tbody id="teamTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- MODULE 2: SCOPE MANAGEMENT & WBS -->
+      <!-- ========================================== -->
+      <section id="section-scope" class="module-section">
+        
+        <!-- Case Study Scope Notice Banner -->
+        <div class="warning-box">
+          <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
+          <div>
+            <strong>Scope Baseline Enforcement Rule:</strong> Hospital management introduced additional requirements (AI preliminary diagnosis module and mobile app). Unapproved requirements are strictly prevented from inclusion in the approved project scope until formal CCB approval!
+          </div>
+        </div>
+
+        <!-- Change Request Control Board (CCB) Section -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-code-pull-request"></i> Change Request Mechanism (CCB Evaluation)</h3>
+            <button class="btn btn-outline btn-sm" onclick="openCrModal();"><i class="fa-solid fa-plus"></i> Propose Change</button>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+            Demonstrating how approving a Change Request dynamically updates the approved project budget (+PKR 800,000 total) and schedule (+3 weeks total), and integrates the new scope into the baseline.
+          </p>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>CR ID</th>
+                  <th>Title</th>
+                  <th>Requested By</th>
+                  <th>Cost Impact (PKR)</th>
+                  <th>Schedule Impact</th>
+                  <th>Status</th>
+                  <th>CCB Decision Action</th>
+                </tr>
+              </thead>
+              <tbody id="changeRequestsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Requirements Management -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-list-check"></i> Requirements Management & Scope Baseline</h3>
+            <button class="btn btn-primary btn-sm" onclick="openReqModal();"><i class="fa-solid fa-plus"></i> Add Requirement</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Title</th>
+                  <th>Module</th>
+                  <th>Priority</th>
+                  <th>Scope Status</th>
+                  <th>Baseline Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requirementsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Hierarchical Work Breakdown Structure (WBS) -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-network-wired"></i> Hierarchical Work Breakdown Structure (WBS)</h3>
+            <button class="btn btn-outline btn-sm" onclick="openWbsModal();"><i class="fa-solid fa-plus"></i> Add Work Package</button>
+          </div>
+          <div id="wbsContainer"></div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- MODULE 3: SCHEDULE & RESOURCE MANAGEMENT -->
+      <!-- ========================================== -->
+      <section id="section-schedule" class="module-section">
+        
+        <!-- Schedule Delay Analysis Banner -->
+        <div id="scheduleDelayImpactBox"></div>
+
+        <!-- Gantt-style Timeline Chart -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-chart-gantt"></i> Project Schedule & Milestone Gantt Timeline</h3>
+            <div>
+              <span class="badge" style="background: #2563eb; color: #fff;">Planned</span>
+              <span class="badge" style="background: #10b981; color: #fff;">Completed</span>
+              <span class="badge" style="background: #ef4444; color: #fff;">Delayed</span>
+            </div>
+          </div>
+          <div class="gantt-container" id="ganttTimelineContainer"></div>
+        </div>
+
+        <!-- Defined Activities & Dependencies Table -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-tasks"></i> Project Activity List, Predecessors & Resource Assignments</h3>
+            <button class="btn btn-primary btn-sm" onclick="openActivityModal();"><i class="fa-solid fa-plus"></i> Add Activity</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Act Code</th>
+                  <th>Activity Name</th>
+                  <th>Assigned Resource</th>
+                  <th>Duration</th>
+                  <th>Planned Weeks</th>
+                  <th>Predecessors</th>
+                  <th>Planned Cost</th>
+                  <th>Actual Cost</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                  <th>Update</th>
+                </tr>
+              </thead>
+              <tbody id="activitiesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- MODULE 4: COST MANAGEMENT & EARNED VALUE ANALYSIS -->
+      <!-- ========================================== -->
+      <section id="section-cost" class="module-section">
+        
+        <!-- EVM Automated Warnings Container -->
+        <div id="evmWarningsContainer"></div>
+
+        <!-- EVM KPI Grid -->
+        <div class="grid-4">
+          <div class="stat-card">
+            <div class="stat-label">Planned Value (PV)</div>
+            <div class="stat-value" id="evmPV">--</div>
+            <div class="stat-sub">Budgeted Cost of Scheduled Work</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Earned Value (EV)</div>
+            <div class="stat-value" id="evmEV">--</div>
+            <div class="stat-sub">Budgeted Cost of Work Performed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Actual Cost (AC)</div>
+            <div class="stat-value text-danger" id="evmAC">--</div>
+            <div class="stat-sub">Actual Funds Spent to Date</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Budget at Completion (BAC)</div>
+            <div class="stat-value" id="evmBAC">--</div>
+            <div class="stat-sub">Total Approved Planned Budget</div>
+          </div>
+        </div>
+
+        <!-- Variances and Performance Indices -->
+        <div class="grid-4" style="margin-top: 18px;">
+          <div class="stat-card">
+            <div class="stat-label">Cost Performance Index (CPI)</div>
+            <div class="stat-value" id="evmCPI">--</div>
+            <div class="stat-sub">Formula: EV / AC (&lt; 1.0 = Overrun)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Schedule Performance Index (SPI)</div>
+            <div class="stat-value" id="evmSPI">--</div>
+            <div class="stat-sub">Formula: EV / PV (&lt; 1.0 = Delay)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Cost Variance (CV)</div>
+            <div class="stat-value" id="evmCV">--</div>
+            <div class="stat-sub">Formula: EV - AC</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Estimate at Completion (EAC)</div>
+            <div class="stat-value" id="evmEAC">--</div>
+            <div class="stat-sub">Formula: BAC / CPI</div>
+          </div>
+        </div>
+
+        <!-- Activity Cost Breakdown Table -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-file-invoice-dollar"></i> Programmatic Activity-Level Cost & EVM Breakdown</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Activity Description</th>
+                  <th>Planned Cost</th>
+                  <th>Actual Cost</th>
+                  <th>Progress</th>
+                  <th>PV (PKR)</th>
+                  <th>EV (PKR)</th>
+                  <th>CV (PKR)</th>
+                  <th>CPI</th>
+                  <th>SPI</th>
+                </tr>
+              </thead>
+              <tbody id="evmActivityTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- MODULE 5: QUALITY MANAGEMENT & RISK CONTROL -->
+      <!-- ========================================== -->
+      <section id="section-quality" class="module-section">
+        
+        <!-- Defect Tracking Module -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-bug"></i> Defect Tracking Module (Critical Defects Recorded)</h3>
+            <button class="btn btn-danger btn-sm" onclick="openDefectModal();"><i class="fa-solid fa-plus"></i> Report Defect</button>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+            Case study mandates tracking critical defects discovered during testing in <strong>Appointment Scheduling</strong> and <strong>Patient Record Management</strong>.
+          </p>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Defect ID</th>
+                  <th>Title & Description</th>
+                  <th>Module</th>
+                  <th>Severity</th>
+                  <th>Assigned Engineer</th>
+                  <th>Status</th>
+                  <th>Update Action</th>
+                </tr>
+              </thead>
+              <tbody id="defectsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Quality Deliverable Checklist -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-clipboard-check"></i> Quality Checklist for Project Deliverables</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Deliverable</th>
+                  <th>Inspection Checkpoint</th>
+                  <th>Quality Standard</th>
+                  <th>Result</th>
+                  <th>Inspected By</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="checklistsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5x5 Prioritization Matrix for Risks -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-table-cells"></i> 5x5 Risk Prioritization Matrix (Likelihood × Impact)</h3>
+            <button class="btn btn-outline btn-sm" onclick="openRiskModal();"><i class="fa-solid fa-plus"></i> Add Risk</button>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+            Ranking risks: Red (Score ≥ 15: Critical), Yellow (Score 8-14: Moderate), Green (Score &lt; 8: Low).
+          </p>
+          <div class="grid-2">
+            <!-- 5x5 Visual Grid -->
+            <div>
+              <div class="risk-matrix-grid" id="riskMatrixGrid"></div>
+            </div>
+            <!-- Ranked Risk Table -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Risk Title</th>
+                    <th>Score (L×I)</th>
+                    <th>Strategy</th>
+                    <th>Mitigation Plan</th>
+                  </tr>
+                </thead>
+                <tbody id="riskTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Process Decision Program Chart (PDPC) -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-diagram-project"></i> Process Decision Program Chart (PDPC) - Risk Response Tree</h3>
+            <button class="btn btn-outline btn-sm" onclick="openPdpcModal();"><i class="fa-solid fa-plus"></i> Add PDPC Step</button>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+            Structured PDPC risk response tree showing process nodes, anticipated failure modes, preventive countermeasures, and contingency failover plans.
+          </p>
+          <div class="pdpc-tree" id="pdpcTreeContainer"></div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- MODULE 6 / REPORTS & AUDIT -->
+      <!-- ========================================== -->
+      <section id="section-reports" class="module-section">
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-file-invoice"></i> System Integration, Validation & Audit Report</h3>
+            <button class="btn btn-primary" onclick="window.print();"><i class="fa-solid fa-print"></i> Print Formal Report</button>
+          </div>
+          <div id="fullReportContent" style="padding: 12px 0;">
+            <!-- Generated dynamically -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Change Request Modal -->
+  <div id="modalCr" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Propose Scope Change Request</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modalCr');">&times;</button>
+      </div>
+      <form id="formCr" onsubmit="handleCrSubmit(event);">
+        <div class="form-group">
+          <label>CR Code</label>
+          <input type="text" id="crNumber" class="form-control" required placeholder="e.g. CR-03" />
+        </div>
+        <div class="form-group">
+          <label>Change Request Title</label>
+          <input type="text" id="crTitle" class="form-control" required placeholder="e.g. Pharmacy Integration" />
+        </div>
+        <div class="form-group">
+          <label>Requested By</label>
+          <input type="text" id="crRequester" class="form-control" required placeholder="Hospital Executive Director" />
+        </div>
+        <div class="form-group">
+          <label>Business Justification</label>
+          <textarea id="crJustification" class="form-control" required></textarea>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Cost Impact (PKR)</label>
+            <input type="number" id="crCostImpact" class="form-control" required value="0" />
+          </div>
+          <div class="form-group">
+            <label>Schedule Impact (Weeks)</label>
+            <input type="number" id="crScheduleImpact" class="form-control" required value="0" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Change Request</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Requirement Modal -->
+  <div id="modalReq" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Add New Requirement</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modalReq');">&times;</button>
+      </div>
+      <form id="formReq" onsubmit="handleReqSubmit(event);">
+        <div class="form-group">
+          <label>Req Code</label>
+          <input type="text" id="reqCode" class="form-control" required placeholder="REQ-09" />
+        </div>
+        <div class="form-group">
+          <label>Requirement Title</label>
+          <input type="text" id="reqTitle" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label>Target Module</label>
+          <input type="text" id="reqModule" class="form-control" required placeholder="e.g. Telehealth, Billing" />
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="reqPriority" class="form-control">
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Initial Approval Status</label>
+            <select id="reqStatus" class="form-control">
+              <option value="Pending Approval">Pending Approval (Unapproved)</option>
+              <option value="Approved">Approved (In Scope)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="reqDesc" class="form-control"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Save Requirement</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Activity Progress & Cost Update Modal -->
+  <div id="modalActivityUpdate" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Update Activity Progress & Actual Cost</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modalActivityUpdate');">&times;</button>
+      </div>
+      <form id="formActivityUpdate" onsubmit="handleActivityUpdateSubmit(event);">
+        <input type="hidden" id="updateActId" />
+        <div class="form-group">
+          <label>Activity Name</label>
+          <input type="text" id="updateActName" class="form-control" disabled />
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Progress (%)</label>
+            <input type="number" id="updateActProgress" class="form-control" min="0" max="100" required />
+          </div>
+          <div class="form-group">
+            <label>Actual Cost (PKR Spent)</label>
+            <input type="number" id="updateActActualCost" class="form-control" min="0" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="updateActStatus" class="form-control">
+            <option value="Not Started">Not Started</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Delayed">Delayed</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Update Activity & Recalculate EVM</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Defect Modal -->
+  <div id="modalDefect" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Log Quality Defect</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modalDefect');">&times;</button>
+      </div>
+      <form id="formDefect" onsubmit="handleDefectSubmit(event);">
+        <div class="form-group">
+          <label>Defect Code</label>
+          <input type="text" id="defectCode" class="form-control" required placeholder="DEF-05" />
+        </div>
+        <div class="form-group">
+          <label>Defect Title</label>
+          <input type="text" id="defectTitle" class="form-control" required />
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Module</label>
+            <input type="text" id="defectModule" class="form-control" required placeholder="e.g. Appointment Scheduling" />
+          </div>
+          <div class="form-group">
+            <label>Severity</label>
+            <select id="defectSeverity" class="form-control">
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Assignee</label>
+          <select id="defectAssignee" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label>Detailed Description</label>
+          <textarea id="defectDesc" class="form-control" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-danger" style="width: 100%;">Log Defect</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Project Closure Modal -->
+  <div id="modalClosure" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Project Status & Closure Record</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modalClosure');">&times;</button>
+      </div>
+      <form id="formClosure" onsubmit="handleClosureSubmit(event);">
+        <div class="form-group">
+          <label>Closure Status</label>
+          <select id="closureStatus" class="form-control">
+            <option value="Active">Active (In Flight)</option>
+            <option value="Closed">Closed / Signed Off</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Lessons Learned / Closure Notes</label>
+          <textarea id="closureNotes" class="form-control" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Save Status Record</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- WBS Modal -->
+  <div id="modalWbs" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Add WBS Work Package</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modalWbs');">&times;</button>
+      </div>
+      <form id="formWbs" onsubmit="handleWbsSubmit(event);">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>WBS Code</label>
+            <input type="text" id="wbsCode" class="form-control" required placeholder="e.g. 3.3 or 8.0" />
+          </div>
+          <div class="form-group">
+            <label>Parent Deliverable Code</label>
+            <input type="text" id="wbsParentCode" class="form-control" placeholder="e.g. 3.0 (leave blank if root)" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Work Package Title</label>
+          <input type="text" id="wbsTitle" class="form-control" required placeholder="e.g. Patient Portal Integration" />
+        </div>
+        <div class="form-group">
+          <label>Key Deliverable</label>
+          <input type="text" id="wbsDeliverable" class="form-control" required placeholder="e.g. Patient Mobile API & Auth" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Create Work Package</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Activity Modal -->
+  <div id="modalActivity" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Schedule New Project Activity</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modalActivity');">&times;</button>
+      </div>
+      <form id="formActivity" onsubmit="handleActivitySubmit(event);">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Activity Code</label>
+            <input type="text" id="newActCode" class="form-control" required placeholder="e.g. ACT-15" />
+          </div>
+          <div class="form-group">
+            <label>WBS Reference Code</label>
+            <input type="text" id="newActWbsCode" class="form-control" required placeholder="e.g. 3.1" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Activity Name</label>
+          <input type="text" id="newActName" class="form-control" required placeholder="e.g. Automated Pharmacy Dispatch Gateway" />
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Assigned Team Member</label>
+            <select id="newActAssignedTo" class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label>Predecessors (Comma separated)</label>
+            <input type="text" id="newActPredecessors" class="form-control" placeholder="e.g. ACT-03,ACT-05" />
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Duration (Weeks)</label>
+            <input type="number" id="newActDuration" class="form-control" min="1" required value="2" />
+          </div>
+          <div class="form-group">
+            <label>Start Week</label>
+            <input type="number" id="newActStartWeek" class="form-control" min="1" required value="9" />
+          </div>
+          <div class="form-group">
+            <label>Planned Cost (PKR)</label>
+            <input type="number" id="newActPlannedCost" class="form-control" min="0" required value="300000" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Schedule Activity</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Risk Modal -->
+  <div id="modalRisk" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Register Project Risk</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modalRisk');">&times;</button>
+      </div>
+      <form id="formRisk" onsubmit="handleRiskSubmit(event);">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Risk Code</label>
+            <input type="text" id="riskCode" class="form-control" required placeholder="e.g. RSK-05" />
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="riskCategory" class="form-control">
+              <option value="Technical">Technical</option>
+              <option value="Scope">Scope</option>
+              <option value="Schedule">Schedule</option>
+              <option value="Financial">Financial</option>
+              <option value="Security">Security & HIPAA</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Risk Title</label>
+          <input type="text" id="riskTitle" class="form-control" required placeholder="e.g. Cloud API Latency Spike" />
+        </div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Likelihood (1-5)</label>
+            <input type="number" id="riskLikelihood" class="form-control" min="1" max="5" required value="3" />
+          </div>
+          <div class="form-group">
+            <label>Impact (1-5)</label>
+            <input type="number" id="riskImpact" class="form-control" min="1" max="5" required value="4" />
+          </div>
+          <div class="form-group">
+            <label>Response Strategy</label>
+            <select id="riskStrategy" class="form-control">
+              <option value="Mitigate">Mitigate</option>
+              <option value="Avoid">Avoid</option>
+              <option value="Transfer">Transfer</option>
+              <option value="Accept">Accept</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Mitigation / Contingency Action Plan</label>
+          <textarea id="riskMitigationPlan" class="form-control" required placeholder="Concrete action steps to manage this risk..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Register Risk in 5x5 Matrix</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PDPC Modal -->
+  <div id="modalPdpc" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Add PDPC Risk Response Step</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modalPdpc');">&times;</button>
+      </div>
+      <form id="formPdpc" onsubmit="handlePdpcSubmit(event);">
+        <div class="form-group">
+          <label>Process Step / Phase</label>
+          <input type="text" id="pdpcStep" class="form-control" required placeholder="e.g. 5-Hospital Database Live Data Migration" />
+        </div>
+        <div class="form-group">
+          <label>Potential Failure / Problem</label>
+          <input type="text" id="pdpcProblem" class="form-control" required placeholder="e.g. Schema constraint conflict or duplicate national patient IDs" />
+        </div>
+        <div class="form-group">
+          <label>Preventive Countermeasure</label>
+          <textarea id="pdpcPreventive" class="form-control" required placeholder="e.g. Run pre-migration hash validation and dry-run staging scripts"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Contingency / Failover Plan</label>
+          <textarea id="pdpcContingency" class="form-control" required placeholder="e.g. Instant automated rollback to snapshot and parallel manual audit"></textarea>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Decision Node</label>
+            <input type="text" id="pdpcDecisionNode" class="form-control" value="Pre-Cutover Go/No-Go Gate" />
+          </div>
+          <div class="form-group">
+            <label>Feasibility</label>
+            <select id="pdpcFeasibility" class="form-control">
+              <option value="Feasible">Feasible</option>
+              <option value="In Review">In Review</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Add PDPC Countermeasure</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
